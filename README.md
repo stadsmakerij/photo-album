@@ -1,13 +1,13 @@
 # Photo Album (Fotoalbum)
 
+Een lokaal fotoalbum voor de Stadsmakerij. Bezoekers scannen een QR-code, uploaden foto's vanaf hun telefoon, en de foto's worden als diashow getoond op een beeldscherm. Alles draait lokaal op een Raspberry Pi — geen cloud, geen accounts.
+
 - [Wat doet dit project?](#wat-doet-dit-project)
 - [Installatie](#installatie)
 - [De app starten](#de-app-starten)
 - [Backup](#backup)
 - [USB-sticks](#usb-sticks)
 - [Mapstructuur](#mapstructuur)
-
-Een lokaal fotoalbum voor de Stadsmakerij. Bezoekers scannen een QR-code, uploaden foto's vanaf hun telefoon, en de foto's worden als diashow getoond op een beeldscherm. Alles draait lokaal op een Raspberry Pi — geen cloud, geen accounts.
 
 ## Wat doet dit project?
 
