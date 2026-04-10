@@ -2,6 +2,7 @@ import io
 import json
 import os
 import glob
+import uuid
 from datetime import datetime
 
 import qrcode
@@ -32,11 +33,12 @@ def allowed_file(filename):
 
 def generate_filename(original_filename, name=None):
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    unique = uuid.uuid4().hex[:6]
     if name:
         safe_name = secure_filename(name).replace(".", "_")
-        return f"{timestamp}_{safe_name}.jpg"
+        return f"{timestamp}_{safe_name}_{unique}.jpg"
     base = os.path.splitext(secure_filename(original_filename))[0]
-    return f"{timestamp}_{base}.jpg"
+    return f"{timestamp}_{base}_{unique}.jpg"
 
 
 def create_resized(source_path, dest_path, max_size):
