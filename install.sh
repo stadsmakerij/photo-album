@@ -13,7 +13,7 @@ echo ""
 # System dependencies
 echo "[1/6] Systeem-pakketten installeren..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq python3 python3-venv python3-pip git rsync > /dev/null
+sudo apt-get install -y -qq python3 python3-venv python3-pip git rsync udisks2 > /dev/null
 
 # Clone or update repo
 if [ -f "$APP_DIR/app.py" ]; then

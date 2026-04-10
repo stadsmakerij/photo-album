@@ -1,12 +1,11 @@
 #!/bin/bash
-# Backup photos to USB sticks in parallel
+# Backup photos to all mounted USB sticks in parallel
 # Intended to run via cron every hour: 0 * * * * /path/to/photo-album/scripts/backup.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PHOTOS_DIR="$SCRIPT_DIR/../photos"
 LOG_FILE="$SCRIPT_DIR/../logs/backup.log"
 STATUS_FILE="$SCRIPT_DIR/../logs/backup_status.json"
-USB_MOUNTS=("/media/usb1" "/media/usb2" "/media/usb3" "/media/usb4")
 MIN_FREE_MB=500
 
 mkdir -p "$(dirname "$LOG_FILE")"
@@ -16,19 +15,20 @@ STICKS_FOUND=0
 PIDS=()
 WARNINGS=""
 
-for MOUNT in "${USB_MOUNTS[@]}"; do
-    if mountpoint -q "$MOUNT" 2>/dev/null; then
-        STICKS_FOUND=$((STICKS_FOUND + 1))
-        DEST="$MOUNT/photo-album-backup/"
-        rsync -a --delete "$PHOTOS_DIR/" "$DEST" &
-        PIDS+=($!)
+# Auto-detect all mounted USB sticks
+USB_MOUNTS=$(lsblk -o MOUNTPOINT,TRAN -nr 2>/dev/null | awk '$2 == "usb" && $1 != "" {print $1}')
 
-        # Check free space
-        FREE_MB=$(df -m "$MOUNT" | awk 'NR==2 {print $4}')
-        if [ "$FREE_MB" -lt "$MIN_FREE_MB" ] 2>/dev/null; then
-            STICK_NAME=$(basename "$MOUNT")
-            WARNINGS="${WARNINGS}${STICK_NAME} bijna vol (${FREE_MB}MB vrij). "
-        fi
+for MOUNT in $USB_MOUNTS; do
+    STICKS_FOUND=$((STICKS_FOUND + 1))
+    DEST="$MOUNT/photo-album-backup/"
+    rsync -a --delete "$PHOTOS_DIR/" "$DEST" &
+    PIDS+=($!)
+
+    # Check free space
+    FREE_MB=$(df -m "$MOUNT" | awk 'NR==2 {print $4}')
+    if [ "$FREE_MB" -lt "$MIN_FREE_MB" ] 2>/dev/null; then
+        STICK_NAME=$(basename "$MOUNT")
+        WARNINGS="${WARNINGS}${STICK_NAME} bijna vol (${FREE_MB}MB vrij). "
     fi
 done
 

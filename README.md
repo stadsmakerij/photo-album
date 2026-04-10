@@ -4,7 +4,7 @@
 - [Installatie](#installatie)
 - [De app starten](#de-app-starten)
 - [Backup](#backup)
-- [USB-sticks instellen](#usb-sticks-instellen)
+- [USB-sticks](#usb-sticks)
 - [Mapstructuur](#mapstructuur)
 
 Een lokaal fotoalbum voor de Stadsmakerij. Bezoekers scannen een QR-code, uploaden foto's vanaf hun telefoon, en de foto's worden als diashow getoond op een beeldscherm. Alles draait lokaal op een Raspberry Pi — geen cloud, geen accounts.
@@ -76,35 +76,14 @@ Handmatig een backup starten:
 ./scripts/backup.sh
 ```
 
-## USB-sticks instellen
+## USB-sticks
 
-1. Sluit USB-sticks aan op de Raspberry Pi
+USB-sticks worden automatisch gedetecteerd. Gewoon insteken — het backup-script vindt ze vanzelf. Foto's worden opgeslagen in een `photo-album-backup/` map op elke stick.
 
-2. Maak mountpoints aan:
-
-```bash
-sudo mkdir -p /media/usb1 /media/usb2 /media/usb3 /media/usb4
-```
-
-3. Zoek de apparaatnamen op:
+Controleer of een stick herkend wordt:
 
 ```bash
 lsblk
-```
-
-4. Voeg de sticks toe aan `/etc/fstab` (de `nofail` optie zorgt dat de Pi opstart ook als een stick ontbreekt):
-
-```
-/dev/sda1 /media/usb1 vfat defaults,nofail 0 0
-/dev/sdb1 /media/usb2 vfat defaults,nofail 0 0
-/dev/sdc1 /media/usb3 vfat defaults,nofail 0 0
-/dev/sdd1 /media/usb4 vfat defaults,nofail 0 0
-```
-
-5. Mount de sticks:
-
-```bash
-sudo mount -a
 ```
 
 ## Mapstructuur
