@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR-code - Stadsmakerij</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="qr-page">
+    <div class="container">
+        <h1>Stadsmakerij Fotoalbum</h1>
+        <p class="subtitle">QR-code voor foto-upload</p>
+
+        <div class="qr-display">
+            <img src="/qr.png" alt="QR-code">
+        </div>
+
+        <p class="qr-url" id="qr-url"></p>
+
+        <a href="/qr.png" download="stadsmakerij-qr.png" class="download-btn">QR-code downloaden</a>
+
+        <nav class="nav-links">
+            <a href="/">Uploaden</a>
+            <a href="/gallery">Galerij</a>
+            <a href="/slideshow">Diashow</a>
+        </nav>
+    </div>
+
+    <script>
+        document.getElementById("qr-url").textContent = window.location.origin;
+    </script>
+</body>
+</html>

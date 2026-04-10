@@ -1,0 +1,9 @@
+photos/originals/*
+photos/display/*
+photos/thumbs/*
+photos/captions/*
+logs/*
+!**/.gitkeep
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galerij - Stadsmakerij</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="gallery-page">
+    <div class="container">
+        <h1>Stadsmakerij Fotoalbum</h1>
+
+        <nav class="nav-links">
+            <a href="/">Uploaden</a>
+        </nav>
+
+        <div id="gallery" class="gallery-grid">
+            <p id="loading">Foto's laden...</p>
+        </div>
+
+        <p id="empty-message" class="hidden">Nog geen foto's. <a href="/">Upload de eerste!</a></p>
+    </div>
+
+    <script>
+        fetch("/photos")
+            .then(function (res) { return res.json(); })
+            .then(function (photos) {
+                const gallery = document.getElementById("gallery");
+                const loading = document.getElementById("loading");
+                const emptyMsg = document.getElementById("empty-message");
+
+                loading.remove();
+
+                if (photos.length === 0) {
+                    emptyMsg.classList.remove("hidden");
+                    return;
+                }
+
+                photos.forEach(function (photo) {
+                    const link = document.createElement("a");
+                    link.href = "/photos/originals/" + photo.filename;
+                    link.target = "_blank";
+
+                    const img = document.createElement("img");
+                    img.src = "/photos/thumbs/" + photo.filename;
+                    img.alt = photo.caption || photo.filename;
+                    img.loading = "lazy";
+
+                    link.appendChild(img);
+                    gallery.appendChild(link);
+                });
+            });
+    </script>
+</body>
+</html>

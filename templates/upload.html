@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foto Uploaden - Stadsmakerij</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="upload-page">
+    <div class="container">
+        <h1>Stadsmakerij Fotoalbum</h1>
+        <p class="subtitle">Upload je foto's hieronder</p>
+
+        <form id="upload-form">
+            <div class="form-group">
+                <label for="name">Naam (optioneel)</label>
+                <input type="text" id="name" name="name" placeholder="Je naam">
+            </div>
+
+            <div class="form-group">
+                <label for="caption">Tekst (optioneel)</label>
+                <textarea id="caption" name="caption" placeholder="Korte beschrijving bij je foto's" maxlength="140" rows="2"></textarea>
+                <span class="char-count"><span id="char-count">0</span> / 140</span>
+            </div>
+
+            <div class="form-group">
+                <label for="photos">Kies foto's</label>
+                <input type="file" id="photos" name="photos" accept="image/*" multiple>
+            </div>
+
+            <button type="submit" id="submit-btn">Uploaden</button>
+        </form>
+
+        <div id="progress-section" class="hidden">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text">Bezig met uploaden...</p>
+        </div>
+
+        <div id="result-section" class="hidden">
+            <h2 id="result-title"></h2>
+            <div id="result-errors"></div>
+            <div id="result-thumbs" class="thumb-grid"></div>
+            <button id="upload-more" class="secondary-btn">Meer foto's uploaden</button>
+        </div>
+
+        <nav class="nav-links">
+            <a href="/gallery">Bekijk alle foto's</a>
+        </nav>
+    </div>
+
+    <script>
+        const form = document.getElementById("upload-form");
+        const progressSection = document.getElementById("progress-section");
+        const progressFill = document.getElementById("progress-fill");
+        const progressText = document.getElementById("progress-text");
+        const resultSection = document.getElementById("result-section");
+        const resultTitle = document.getElementById("result-title");
+        const resultErrors = document.getElementById("result-errors");
+        const resultThumbs = document.getElementById("result-thumbs");
+        const submitBtn = document.getElementById("submit-btn");
+
+        form.addEventListener("submit", function (e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById("photos");
+            const nameInput = document.getElementById("name");
+            const captionInput = document.getElementById("caption");
+
+            if (fileInput.files.length === 0) {
+                alert("Selecteer eerst een of meer foto's.");
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of fileInput.files) {
+                formData.append("photos", file);
+            }
+            formData.append("name", nameInput.value);
+            formData.append("caption", captionInput.value);
+
+            form.classList.add("hidden");
+            progressSection.classList.remove("hidden");
+            resultSection.classList.add("hidden");
+            progressFill.style.width = "0%";
+
+            const xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener("progress", function (e) {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressFill.style.width = pct + "%";
+                    progressText.textContent = pct + "% geupload...";
+                }
+            });
+
+            xhr.addEventListener("load", function () {
+                progressSection.classList.add("hidden");
+
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    showResult(data);
+                } else {
+                    resultTitle.textContent = "Er ging iets mis";
+                    resultThumbs.innerHTML = "";
+                    resultErrors.textContent = "Probeer het opnieuw.";
+                    resultSection.classList.remove("hidden");
+                }
+            });
+
+            xhr.addEventListener("error", function () {
+                progressSection.classList.add("hidden");
+                resultTitle.textContent = "Verbindingsfout";
+                resultThumbs.innerHTML = "";
+                resultErrors.textContent = "Controleer je verbinding en probeer het opnieuw.";
+                resultSection.classList.remove("hidden");
+            });
+
+            xhr.open("POST", "/upload");
+            xhr.send(formData);
+        });
+
+        function showResult(data) {
+            resultThumbs.innerHTML = "";
+            resultErrors.innerHTML = "";
+
+            const count = data.uploaded.length;
+            if (count > 0) {
+                resultTitle.textContent = count === 1
+                    ? "1 foto geupload!"
+                    : count + " foto's geupload!";
+
+                data.uploaded.forEach(function (filename) {
+                    const img = document.createElement("img");
+                    img.src = "/photos/thumbs/" + filename;
+                    img.alt = filename;
+                    resultThumbs.appendChild(img);
+                });
+            } else {
+                resultTitle.textContent = "Geen foto's geupload";
+            }
+
+            if (data.errors.length > 0) {
+                const ul = document.createElement("ul");
+                ul.className = "error-list";
+                data.errors.forEach(function (err) {
+                    const li = document.createElement("li");
+                    li.textContent = err;
+                    ul.appendChild(li);
+                });
+                resultErrors.appendChild(ul);
+            }
+
+            resultSection.classList.remove("hidden");
+        }
+
+        document.getElementById("upload-more").addEventListener("click", function () {
+            resultSection.classList.add("hidden");
+            form.classList.remove("hidden");
+            document.getElementById("photos").value = "";
+        });
+
+        document.getElementById("caption").addEventListener("input", function () {
+            document.getElementById("char-count").textContent = this.value.length;
+        });
+    </script>
+</body>
+</html>

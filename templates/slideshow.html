@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diashow - Stadsmakerij</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="slideshow-page">
+    <div id="slideshow">
+        <img id="slide" src="" alt="Diashow">
+        <div id="slide-caption"></div>
+        <div id="slide-counter"></div>
+        <div id="paused-indicator" class="hidden">Gepauzeerd</div>
+        <div id="warning-banner" class="hidden"></div>
+        <div id="qr-overlay">
+            <img src="/qr.png" alt="QR-code" id="qr-img">
+            <div id="qr-text">
+                <strong>Stadsmakerij Fotoalbum</strong>
+                <span>Scan en upload je foto's!</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcome-screen" class="hidden">
+        <h1>Stadsmakerij Fotoalbum</h1>
+        <img src="/qr.png" alt="QR-code" class="welcome-qr">
+        <p>Scan de QR-code om foto's te uploaden</p>
+    </div>
+
+    <script>
+        var photos = [];
+        var currentIndex = 0;
+        var paused = false;
+        var timer = null;
+        var INTERVAL = 8000;
+
+        var slideshow = document.getElementById("slideshow");
+        var slideImg = document.getElementById("slide");
+        var caption = document.getElementById("slide-caption");
+        var counter = document.getElementById("slide-counter");
+        var pausedIndicator = document.getElementById("paused-indicator");
+        var welcomeScreen = document.getElementById("welcome-screen");
+
+        // Parse "2025-04-10_183022_Rick_1.jpg" → { date: "10 april 2025", name: "Rick" }
+        var MONTHS = ["januari","februari","maart","april","mei","juni",
+                      "juli","augustus","september","oktober","november","december"];
+
+        function parseFilename(filename) {
+            var base = filename.replace(".jpg", "");
+            var parts = base.split("_");
+            // parts[0] = "2025-04-10", parts[1] = "183022", rest = name segments
+            var dateParts = (parts[0] || "").split("-");
+            var dateStr = "";
+            if (dateParts.length === 3) {
+                var day = parseInt(dateParts[2], 10);
+                var month = MONTHS[parseInt(dateParts[1], 10) - 1] || "";
+                var year = dateParts[0];
+                dateStr = day + " " + month + " " + year;
+            }
+            // Name: everything after date and time, minus trailing _1, _2 etc from batch
+            var nameParts = parts.slice(2);
+            // Remove trailing batch number if present
+            if (nameParts.length > 1 && /^\d+$/.test(nameParts[nameParts.length - 1])) {
+                nameParts.pop();
+            }
+            var name = nameParts.join(" ");
+            return { date: dateStr, name: name };
+        }
+
+        function showSlide(index) {
+            if (photos.length === 0) return;
+            currentIndex = ((index % photos.length) + photos.length) % photos.length;
+            var photo = photos[currentIndex];
+            slideImg.src = "/photos/display/" + photo.filename;
+            counter.textContent = (currentIndex + 1) + " / " + photos.length;
+
+            var info = parseFilename(photo.filename);
+            var parts = [];
+            if (info.name) parts.push(info.name);
+            if (photo.caption) parts.push('"' + photo.caption + '"');
+            if (info.date) parts.push(info.date);
+            caption.textContent = parts.join(" — ");
+        }
+
+        function nextSlide() {
+            showSlide(currentIndex + 1);
+        }
+
+        function prevSlide() {
+            showSlide(currentIndex - 1);
+        }
+
+        function startTimer() {
+            stopTimer();
+            timer = setInterval(nextSlide, INTERVAL);
+        }
+
+        function stopTimer() {
+            if (timer) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        function togglePause() {
+            paused = !paused;
+            if (paused) {
+                stopTimer();
+                pausedIndicator.classList.remove("hidden");
+            } else {
+                startTimer();
+                pausedIndicator.classList.add("hidden");
+            }
+        }
+
+        function showWelcome() {
+            slideshow.classList.add("hidden");
+            welcomeScreen.classList.remove("hidden");
+        }
+
+        function showSlideshow() {
+            welcomeScreen.classList.add("hidden");
+            slideshow.classList.remove("hidden");
+        }
+
+        document.addEventListener("keydown", function (e) {
+            switch (e.code) {
+                case "Space":
+                    e.preventDefault();
+                    togglePause();
+                    break;
+                case "ArrowRight":
+                    nextSlide();
+                    if (!paused) startTimer();
+                    break;
+                case "ArrowLeft":
+                    prevSlide();
+                    if (!paused) startTimer();
+                    break;
+            }
+        });
+
+        function loadPhotos() {
+            fetch("/photos")
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.length === 0) {
+                        showWelcome();
+                        return;
+                    }
+                    photos = data;
+                    showSlideshow();
+                    showSlide(0);
+                    if (!paused) startTimer();
+                });
+        }
+
+        // Reload photo list every 30 seconds to pick up new uploads
+        setInterval(function () {
+            fetch("/photos")
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.length === 0) {
+                        showWelcome();
+                        return;
+                    }
+                    if (photos.length === 0 && data.length > 0) {
+                        photos = data;
+                        showSlideshow();
+                        showSlide(0);
+                        if (!paused) startTimer();
+                    } else if (data.length !== photos.length) {
+                        photos = data;
+                        counter.textContent = (currentIndex + 1) + " / " + photos.length;
+                    }
+                });
+        }, 30000);
+
+        var warningBanner = document.getElementById("warning-banner");
+
+        function checkStatus() {
+            fetch("/status")
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.warning) {
+                        warningBanner.textContent = data.warning;
+                        warningBanner.classList.remove("hidden");
+                    } else {
+                        warningBanner.classList.add("hidden");
+                    }
+                });
+        }
+
+        checkStatus();
+        setInterval(checkStatus, 60000);
+
+        loadPhotos();
+    </script>
+</body>
+</html>
