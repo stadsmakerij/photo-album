@@ -1,10 +1,10 @@
 # Photo Album (Fotoalbum)
 
 - [Wat doet dit project?](#wat-doet-dit-project)
-- [Vereisten](#vereisten)
 - [Installatie](#installatie)
 - [De app starten](#de-app-starten)
-- [Backup instellen](#backup-instellen)
+- [Backup](#backup)
+- [USB-sticks instellen](#usb-sticks-instellen)
 - [Mapstructuur](#mapstructuur)
 
 Een lokaal fotoalbum voor de Stadsmakerij. Bezoekers scannen een QR-code, uploaden foto's vanaf hun telefoon, en de foto's worden als diashow getoond op een beeldscherm. Alles draait lokaal op een Raspberry Pi — geen cloud, geen accounts.
@@ -13,57 +13,73 @@ Een lokaal fotoalbum voor de Stadsmakerij. Bezoekers scannen een QR-code, upload
 
 - **Uploaden**: Bezoekers uploaden foto's via een mobiele webpagina (bereikbaar via QR-code)
 - **Galerij**: Overzicht van alle foto's als thumbnails
-- **Diashow**: Fullscreen diashow voor op een beeldscherm
-- **Backup**: Automatische nachtelijke backup naar USB-sticks
-
-## Vereisten
-
-- Raspberry Pi OS (Debian-based) of een ander Linux-systeem
-- Python 3.9 of hoger
-- pip
+- **Diashow**: Fullscreen diashow voor op een beeldscherm, met QR-code overlay
+- **Backup**: Automatische backup naar USB-sticks (elk uur)
 
 ## Installatie
 
+Eén commando op de Raspberry Pi:
+
 ```bash
-# Clone de repository
-git clone <repo-url> /home/pi/photo-album
-cd /home/pi/photo-album
-
-# Installeer Python-pakketten
-pip install flask pillow
-
-# Maak het backup-script uitvoerbaar
-chmod +x scripts/backup.sh
+git clone https://github.com/stadsmakerij/photo-album.git ~/photo-album
+cd ~/photo-album
+./install.sh
 ```
+
+Dit script regelt alles:
+- Installeert systeem-pakketten (Python, git, rsync)
+- Maakt een Python virtual environment aan met dependencies
+- Maakt alle benodigde mappen aan
+- Genereert en installeert een systemd-service (automatisch starten bij boot)
+- Stelt de backup-cronjob in (elk uur)
+- Toont het IP-adres en de URL na afloop
 
 ## De app starten
 
+### Handmatig
+
 ```bash
-# Start de server (bereikbaar op poort 5000)
-python app.py
+cd ~/photo-album
+venv/bin/python app.py
 ```
 
-De app is nu bereikbaar op `http://<ip-adres-van-pi>:5000`.
+### Automatisch bij opstarten (aanbevolen)
+
+Het install-script heeft de systemd-service al ingesteld. Beheer met:
+
+```bash
+sudo systemctl status photo-album   # Status bekijken
+sudo systemctl restart photo-album  # Herstarten
+sudo systemctl stop photo-album     # Stoppen
+```
 
 ### Pagina's
 
-| URL          | Functie                          |
-|--------------|----------------------------------|
-| `/`          | Foto's uploaden (mobiel)         |
-| `/gallery`   | Galerij met thumbnails           |
-| `/slideshow` | Fullscreen diashow voor scherm   |
+| URL          | Functie                                |
+|--------------|----------------------------------------|
+| `/`          | Foto's uploaden (mobiel)               |
+| `/gallery`   | Galerij met thumbnails                 |
+| `/slideshow` | Fullscreen diashow voor scherm         |
+| `/qr`        | QR-code bekijken en downloaden         |
 
-### QR-code
+## Backup
 
-Maak een QR-code die verwijst naar `http://<ip-adres-van-pi>:5000` en hang deze op in de Stadsmakerij. Bezoekers scannen de code en kunnen direct foto's uploaden.
+Het backup-script draait automatisch elk uur via cron en kopieert alle foto's naar aangesloten USB-sticks via rsync.
 
-## Backup instellen
+- Sticks die niet aangesloten zijn worden overgeslagen
+- Resultaten worden gelogd in `logs/backup.log`
+- Bij problemen (stick vol of niet aangesloten) verschijnt een melding op de diashow
 
-Het backup-script kopieert alle foto's naar USB-sticks via rsync.
+Handmatig een backup starten:
 
-### USB-sticks labelen en mounten
+```bash
+./scripts/backup.sh
+```
 
-1. Sluit maximaal 4 USB-sticks aan op de Raspberry Pi
+## USB-sticks instellen
+
+1. Sluit USB-sticks aan op de Raspberry Pi
+
 2. Maak mountpoints aan:
 
 ```bash
@@ -76,7 +92,7 @@ sudo mkdir -p /media/usb1 /media/usb2 /media/usb3 /media/usb4
 lsblk
 ```
 
-4. Voeg de sticks toe aan `/etc/fstab` met de `nofail` optie (zodat de Pi gewoon opstart als een stick ontbreekt):
+4. Voeg de sticks toe aan `/etc/fstab` (de `nofail` optie zorgt dat de Pi opstart ook als een stick ontbreekt):
 
 ```
 /dev/sda1 /media/usb1 vfat defaults,nofail 0 0
@@ -91,46 +107,26 @@ lsblk
 sudo mount -a
 ```
 
-### Cronjob instellen
-
-Het backup-script draait elk uur. Stel de cronjob in:
-
-```bash
-crontab -e
-```
-
-Voeg de volgende regel toe:
-
-```
-0 * * * * /home/pi/photo-album/scripts/backup.sh
-```
-
-### Handmatig een backup maken
-
-```bash
-./scripts/backup.sh
-```
-
-Resultaten worden gelogd in `logs/backup.log`.
-
 ## Mapstructuur
 
 ```
 photo-album/
 ├── app.py                 ← Flask-server
+├── install.sh             ← Installatiescript (genereert systemd service)
 ├── templates/
 │   ├── upload.html        ← Uploadpagina (mobiel)
 │   ├── gallery.html       ← Galerij
-│   └── slideshow.html     ← Diashow
+│   ├── slideshow.html     ← Diashow
+│   └── qr.html            ← QR-code pagina
 ├── static/
 │   └── style.css
 ├── photos/
 │   ├── originals/         ← Originele foto's (ongewijzigd)
 │   ├── display/           ← Max 1920x1080 (diashow)
-│   └── thumbs/            ← Max 400x300 (galerij)
+│   ├── thumbs/            ← Max 400x300 (galerij)
+│   └── meta/              ← Metadata per foto (JSON)
 ├── scripts/
 │   └── backup.sh          ← Backup naar USB-sticks
-├── logs/
-│   └── backup.log
-└── README.md
+└── logs/
+    └── backup.log
 ```
