@@ -1,7 +1,7 @@
 photos/originals/*
 photos/display/*
 photos/thumbs/*
-photos/captions/*
+photos/meta/*
 logs/*
 !**/.gitkeep
 __pycache__/

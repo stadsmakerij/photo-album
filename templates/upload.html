@@ -13,6 +13,11 @@
 
         <form id="upload-form">
             <div class="form-group">
+                <label for="photos">Kies foto's</label>
+                <input type="file" id="photos" name="photos" accept="image/*" multiple>
+            </div>
+
+            <div class="form-group">
                 <label for="name">Naam (optioneel)</label>
                 <input type="text" id="name" name="name" placeholder="Je naam">
             </div>
@@ -23,9 +28,12 @@
                 <span class="char-count"><span id="char-count">0</span> / 140</span>
             </div>
 
-            <div class="form-group">
-                <label for="photos">Kies foto's</label>
-                <input type="file" id="photos" name="photos" accept="image/*" multiple>
+            <div class="form-group share-section">
+                <span class="section-label">Delen</span>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="shareable" name="shareable">
+                    <span>Deze foto mag gedeeld worden door Stadsmakerij (bijv. blog, Instagram)</span>
+                </label>
             </div>
 
             <button type="submit" id="submit-btn">Uploaden</button>
@@ -79,6 +87,7 @@
             }
             formData.append("name", nameInput.value);
             formData.append("caption", captionInput.value);
+            formData.append("shareable", document.getElementById("shareable").checked ? "1" : "0");
 
             form.classList.add("hidden");
             progressSection.classList.remove("hidden");

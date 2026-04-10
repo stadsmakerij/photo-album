@@ -65,27 +65,25 @@ def create_resized(source_path, dest_path, max_size):
         img.save(dest_path, "JPEG", quality=85)
 
 
-CAPTIONS_DIR = os.path.join(PHOTOS_DIR, "captions")
-os.makedirs(CAPTIONS_DIR, exist_ok=True)
+META_DIR = os.path.join(PHOTOS_DIR, "meta")
+os.makedirs(META_DIR, exist_ok=True)
 
 
-def save_caption(filename, caption):
-    if not caption:
-        return
-    caption_file = os.path.join(CAPTIONS_DIR, filename.replace(".jpg", ".txt"))
-    with open(caption_file, "w", encoding="utf-8") as f:
-        f.write(caption[:140])
+def save_meta(filename, caption="", shareable=False):
+    meta_file = os.path.join(META_DIR, filename.replace(".jpg", ".json"))
+    with open(meta_file, "w", encoding="utf-8") as f:
+        json.dump({"caption": caption[:140], "shareable": shareable}, f)
 
 
-def load_caption(filename):
-    caption_file = os.path.join(CAPTIONS_DIR, filename.replace(".jpg", ".txt"))
-    if os.path.exists(caption_file):
-        with open(caption_file, "r", encoding="utf-8") as f:
-            return f.read()
-    return ""
+def load_meta(filename):
+    meta_file = os.path.join(META_DIR, filename.replace(".jpg", ".json"))
+    if os.path.exists(meta_file):
+        with open(meta_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"caption": "", "shareable": False}
 
 
-def process_upload(file, name=None, caption=None):
+def process_upload(file, name=None, caption="", shareable=False):
     filename = generate_filename(file.filename, name)
     original_path = os.path.join(ORIGINALS_DIR, filename)
     file.save(original_path)
@@ -96,7 +94,7 @@ def process_upload(file, name=None, caption=None):
     thumb_path = os.path.join(THUMBS_DIR, filename)
     create_resized(original_path, thumb_path, THUMB_SIZE)
 
-    save_caption(filename, caption)
+    save_meta(filename, caption, shareable)
 
     return filename
 
@@ -111,6 +109,7 @@ def upload():
     files = request.files.getlist("photos")
     name = request.form.get("name", "").strip()
     caption = request.form.get("caption", "").strip()
+    shareable = request.form.get("shareable") == "1"
 
     if not files or all(f.filename == "" for f in files):
         return jsonify({"error": "Geen bestanden geselecteerd"}), 400
@@ -130,7 +129,7 @@ def upload():
                 timestamped_name = name if not name else f"{name}_{i + 1}"
             else:
                 timestamped_name = name
-            filename = process_upload(file, timestamped_name if timestamped_name else None, caption)
+            filename = process_upload(file, timestamped_name if timestamped_name else None, caption, shareable)
             uploaded.append(filename)
         except Exception as e:
             errors.append(f"{file.filename}: {str(e)}")
@@ -157,7 +156,8 @@ def photos():
     )
     result = []
     for fn in filenames:
-        result.append({"filename": fn, "caption": load_caption(fn)})
+        meta = load_meta(fn)
+        result.append({"filename": fn, "caption": meta["caption"], "shareable": meta["shareable"]})
     return jsonify(result)
 
 
