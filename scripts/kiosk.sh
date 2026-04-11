@@ -30,6 +30,8 @@ while true; do
         --check-for-update-interval=31536000 \
         --password-store=basic \
         --no-first-run \
+        --lang=nl-NL \
+        --accept-lang=nl-NL,nl \
         "$URL"
     sleep 2
 done
