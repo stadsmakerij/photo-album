@@ -10,12 +10,27 @@ exec 9>"$LOCK_FILE"
 flock -n 9 || exit 0
 
 URL="http://localhost:8080/slideshow"
+PROFILE_DIR="$HOME/.config/photo-album-kiosk"
 
 if command -v chromium-browser >/dev/null 2>&1; then
     BROWSER=chromium-browser
 else
     BROWSER=chromium
 fi
+
+# Pre-seed the Chromium profile so translate is permanently disabled.
+# Flags alone are sometimes ignored once the profile has stored a preference.
+mkdir -p "$PROFILE_DIR/Default"
+cat > "$PROFILE_DIR/Default/Preferences" << 'EOF'
+{
+  "translate": {"enabled": false},
+  "translate_blocked_languages": ["nl", "en"],
+  "translate_site_blacklist": ["localhost"],
+  "intl": {"accept_languages": "nl-NL,nl", "selected_languages": "nl-NL,nl"},
+  "credentials_enable_service": false,
+  "profile": {"password_manager_enabled": false}
+}
+EOF
 
 command -v unclutter >/dev/null 2>&1 && unclutter -idle 1 -root &
 
@@ -30,6 +45,7 @@ done
 while true; do
     "$BROWSER" \
         --kiosk \
+        --user-data-dir="$PROFILE_DIR" \
         --noerrdialogs \
         --disable-infobars \
         --disable-session-crashed-bubble \
