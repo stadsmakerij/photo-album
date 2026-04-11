@@ -70,6 +70,8 @@ sudo systemctl restart photo-album
 echo "[6/7] Kiosk-autostart instellen..."
 AUTOSTART_DIR="$HOME/.config/autostart"
 mkdir -p "$AUTOSTART_DIR"
+
+# XDG autostart entry (used by LXDE/wayfire sessions)
 cat > "$AUTOSTART_DIR/photo-album-kiosk.desktop" << EOF
 [Desktop Entry]
 Type=Application
@@ -77,6 +79,23 @@ Name=Photo Album Kiosk
 Exec=$APP_DIR/scripts/kiosk.sh
 X-GNOME-Autostart-enabled=true
 EOF
+
+# labwc autostart (Pi OS Bookworm default). Sources system autostart so panel/wallpaper still load.
+LABWC_DIR="$HOME/.config/labwc"
+mkdir -p "$LABWC_DIR"
+SYSTEM_LABWC_AUTOSTART=""
+for candidate in /etc/xdg/labwc-pi/autostart /etc/xdg/labwc/autostart; do
+    if [ -r "$candidate" ]; then
+        SYSTEM_LABWC_AUTOSTART="$candidate"
+        break
+    fi
+done
+cat > "$LABWC_DIR/autostart" << EOF
+#!/bin/sh
+[ -r "$SYSTEM_LABWC_AUTOSTART" ] && . "$SYSTEM_LABWC_AUTOSTART"
+$APP_DIR/scripts/kiosk.sh &
+EOF
+chmod +x "$LABWC_DIR/autostart"
 
 # Block gnome-keyring autostart prompts (otherwise it asks for a password every login)
 for keyring in gnome-keyring-pkcs11 gnome-keyring-secrets gnome-keyring-ssh; do
