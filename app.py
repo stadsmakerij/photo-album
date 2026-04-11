@@ -2,6 +2,7 @@ import io
 import json
 import os
 import glob
+import socket
 import uuid
 from datetime import datetime
 
@@ -193,9 +194,21 @@ def qr_page():
     return render_template("qr.html")
 
 
+def get_lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        return s.getsockname()[0]
+    except Exception:
+        return "127.0.0.1"
+    finally:
+        s.close()
+
+
 @app.route("/qr.png")
 def qr_image():
-    upload_url = request.url_root.rstrip("/")
+    port = request.host.split(":")[-1] if ":" in request.host else "8080"
+    upload_url = f"http://{get_lan_ip()}:{port}"
     img = qrcode.make(upload_url, box_size=10, border=2)
     buf = io.BytesIO()
     img.save(buf, format="PNG")

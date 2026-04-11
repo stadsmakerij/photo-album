@@ -78,6 +78,16 @@ Exec=$APP_DIR/scripts/kiosk.sh
 X-GNOME-Autostart-enabled=true
 EOF
 
+# Block gnome-keyring autostart prompts (otherwise it asks for a password every login)
+for keyring in gnome-keyring-pkcs11 gnome-keyring-secrets gnome-keyring-ssh; do
+    cat > "$AUTOSTART_DIR/$keyring.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=$keyring
+Hidden=true
+EOF
+done
+
 # Disable screen blanking so the slideshow stays visible
 sudo raspi-config nonint do_blanking 1 2>/dev/null || true
 
