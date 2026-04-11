@@ -7,6 +7,7 @@ PHOTOS_DIR="$SCRIPT_DIR/../photos"
 LOG_FILE="$SCRIPT_DIR/../logs/backup.log"
 STATUS_FILE="$SCRIPT_DIR/../logs/backup_status.json"
 MIN_FREE_MB=500
+SD_MIN_FREE_MB=1024
 
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -14,6 +15,14 @@ TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
 STICKS_FOUND=0
 PIDS=()
 WARNINGS=""
+SD_WARNING=""
+
+# Check free space on the Pi's own root filesystem (SD card)
+SD_FREE_MB=$(df -m "$PHOTOS_DIR" | awk 'NR==2 {print $4}')
+if [ -n "$SD_FREE_MB" ] && [ "$SD_FREE_MB" -lt "$SD_MIN_FREE_MB" ] 2>/dev/null; then
+    SD_FREE_GB=$(awk "BEGIN {printf \"%.1f\", $SD_FREE_MB/1024}")
+    SD_WARNING="SD-kaart bijna vol (${SD_FREE_GB}GB vrij)"
+fi
 
 # Auto-detect all mounted USB sticks
 USB_MOUNTS=$(lsblk -o MOUNTPOINT,TRAN -nr 2>/dev/null | awk '$2 == "usb" && $1 != "" {print $1}')
@@ -50,12 +59,18 @@ else
     echo "$TIMESTAMP | Backup: $SUCCEEDED/$STICKS_FOUND stick(s) gelukt, $FAILURES mislukt" >> "$LOG_FILE"
 fi
 
+if [ -n "$SD_WARNING" ]; then
+    echo "$TIMESTAMP | WAARSCHUWING: $SD_WARNING" >> "$LOG_FILE"
+fi
+
 if [ -n "$WARNINGS" ]; then
     echo "$TIMESTAMP | WAARSCHUWING: $WARNINGS" >> "$LOG_FILE"
 fi
 
-# Write status file for the web app
-if [ "$STICKS_FOUND" -eq 0 ]; then
+# Write status file for the web app. SD-kaart-vol heeft de hoogste prioriteit.
+if [ -n "$SD_WARNING" ]; then
+    STATUS="$SD_WARNING"
+elif [ "$STICKS_FOUND" -eq 0 ]; then
     STATUS="Geen USB-sticks aangesloten — er wordt geen backup gemaakt"
 elif [ "$FAILURES" -gt 0 ]; then
     SUCCEEDED=$((STICKS_FOUND - FAILURES))
