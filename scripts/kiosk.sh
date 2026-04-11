@@ -32,12 +32,11 @@ while true; do
         --no-first-run \
         --lang=nl-NL \
         --accept-lang=nl-NL,nl \
-        --single-process \
         --disable-gpu \
         --disable-extensions \
         --disable-sync \
         --disable-background-networking \
-        --js-flags=--max-old-space-size=128 \
+        --process-per-site \
         "$URL"
     sleep 2
 done
