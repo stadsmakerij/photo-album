@@ -13,7 +13,7 @@ echo ""
 # System dependencies
 echo "[1/7] Systeem-pakketten installeren..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq python3 python3-venv python3-pip git rsync udisks2 unclutter > /dev/null
+sudo apt-get install -y -qq python3 python3-venv python3-pip git rsync udisks2 > /dev/null
 sudo apt-get install -y -qq chromium-browser > /dev/null 2>&1 || sudo apt-get install -y -qq chromium > /dev/null
 
 # Clone or update repo

@@ -32,8 +32,6 @@ cat > "$PROFILE_DIR/Default/Preferences" << 'EOF'
 }
 EOF
 
-command -v unclutter >/dev/null 2>&1 && unclutter -idle 1 -root &
-
 # Wait for the Flask server to be reachable before opening Chromium
 for _ in $(seq 1 60); do
     if curl -s -o /dev/null --max-time 1 "$URL"; then

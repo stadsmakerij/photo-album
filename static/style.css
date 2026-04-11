@@ -252,6 +252,11 @@ button[type="submit"]:active {
 .slideshow-page {
     background: #000;
     overflow: hidden;
+    cursor: none;
+}
+
+.slideshow-page * {
+    cursor: none;
 }
 
 #slideshow {
