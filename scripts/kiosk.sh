@@ -26,7 +26,7 @@ while true; do
         --noerrdialogs \
         --disable-infobars \
         --disable-session-crashed-bubble \
-        --disable-features=TranslateUI \
+        --disable-features=Translate,TranslateUI \
         --check-for-update-interval=31536000 \
         --password-store=basic \
         --no-first-run \
