@@ -2,6 +2,13 @@
 # Start Chromium in kiosk mode showing the slideshow.
 # Restarts automatically if Chromium crashes or is closed.
 
+# Singleton: exit if another instance of this script is already running.
+# Prevents two wrappers (labwc autostart + systemd-xdg-autostart) from
+# fighting over Chromium's profile lock and causing a restart loop.
+LOCK_FILE=/tmp/photo-album-kiosk.lock
+exec 9>"$LOCK_FILE"
+flock -n 9 || exit 0
+
 URL="http://localhost:8080/slideshow"
 
 if command -v chromium-browser >/dev/null 2>&1; then
