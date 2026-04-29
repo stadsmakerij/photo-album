@@ -24,10 +24,18 @@ if [ -n "$SD_FREE_MB" ] && [ "$SD_FREE_MB" -lt "$SD_MIN_FREE_MB" ] 2>/dev/null; 
     SD_WARNING="SD-kaart bijna vol (${SD_FREE_GB}GB vrij)"
 fi
 
-# Auto-detect all mounted USB sticks
-USB_MOUNTS=$(lsblk -o MOUNTPOINT,TRAN -nr 2>/dev/null | awk '$2 == "usb" && $1 != "" {print $1}')
+# Auto-detect all mounted USB sticks (lsblk -P preserves spaces in mount paths)
+USB_MOUNTS=()
+declare -A IS_USB
+while IFS= read -r LINE; do
+    eval "$LINE"
+    [ "$TRAN" = "usb" ] && IS_USB[$NAME]=1
+    if [ -n "$MOUNTPOINT" ] && { [ -n "${IS_USB[$NAME]:-}" ] || [ -n "${IS_USB[$PKNAME]:-}" ]; }; then
+        USB_MOUNTS+=("$MOUNTPOINT")
+    fi
+done < <(lsblk -P -o NAME,MOUNTPOINT,PKNAME,TRAN 2>/dev/null)
 
-for MOUNT in $USB_MOUNTS; do
+for MOUNT in "${USB_MOUNTS[@]}"; do
     STICKS_FOUND=$((STICKS_FOUND + 1))
     DEST="$MOUNT/photo-album-backup/"
     rsync -a --delete "$PHOTOS_DIR/" "$DEST" &
